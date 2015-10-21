@@ -2,6 +2,36 @@
 
 Optimize React code by making pure classes into functions
 
+> Note: Requires React v0.14 or higher.
+
+## Example
+
+In:
+
+```js
+class MyComponent extends React.Component {
+  render() {
+    return (
+      <div className={this.props.className}>
+        ...
+      </div>
+    );
+  }
+}
+```
+
+Out:
+
+```js
+function MyComponent(props) {
+  return (
+    <div className={props.className}>
+      ...
+    </div>
+  );
+}
+```
+
 ## Installation
 
 ```sh
