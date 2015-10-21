@@ -11,6 +11,14 @@ export default function ({Plugin, types: t}) {
     );
   }
 
+  // is `this.*` other than `props`?
+  function isThisNotProps(node) {
+    return (
+      t.isThisExpression(node.object) &&
+      !t.isIdentifier(node.property, { name: 'props' })
+    );
+  }
+
   // is `this.props`?
   function isThisProps(node) {
     return (
@@ -61,10 +69,7 @@ export default function ({Plugin, types: t}) {
             }
           },
           MemberExpression(node) {
-            if (
-              t.isThisExpression(node.object) &&
-              !t.isIdentifier(node.property, { name: 'props' })
-            ) {
+            if (isThisNotProps(node)) {
               isPure = false;
             }
           }
