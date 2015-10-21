@@ -3,7 +3,7 @@ export default function ({Plugin, types: t}) {
 
   // is `class extends React.Component`?
   function isReactClass(node) {
-    var superClass = node.superClass;
+    const superClass = node.superClass;
     return (
       t.isMemberExpression(superClass) &&
       t.isIdentifier(superClass.object, { name: 'React' }) &&
