@@ -5,18 +5,17 @@ export default function ({Plugin, types: t}) {
   function isReactClass(node) {
     var superClass = node.superClass;
     return (
-      superClass &&
-      superClass.type === 'MemberExpression' &&
-      superClass.object.name === 'React' &&
-      superClass.property.name === 'Component'
+      t.isMemberExpression(superClass) &&
+      t.isIdentifier(superClass.object, { name: 'React' }) &&
+      t.isIdentifier(superClass.property, { name: 'Component' })
     );
   }
 
   // is `this.props`?
   function isThisProps(node) {
     return (
-      node.object.type === 'ThisExpression' &&
-      node.property.name === 'props'
+      t.isThisExpression(node.object) &&
+      t.isIdentifier(node.property, { name: 'props' })
     );
   }
 
@@ -29,8 +28,16 @@ export default function ({Plugin, types: t}) {
     );
   }
 
+  function getMethodName(node) {
+    return node.key.name;
+  }
+
   function getClassName(node) {
     return node.id.name;
+  }
+
+  function getMethodBody(node) {
+    return node.value.body;
   }
 
   return new Plugin('react-pure-components', {
@@ -47,15 +54,23 @@ export default function ({Plugin, types: t}) {
         // get the render method and make sure it doesn't have any other methods
         this.traverse({
           MethodDefinition(node) {
-            if (node.key.name === 'render') {
+            if (getMethodName(node) === 'render') {
               renderMethod = node;
             } else {
+              isPure = false;
+            }
+          },
+          MemberExpression(node) {
+            if (
+              t.isThisExpression(node.object) &&
+              !t.isIdentifier(node.property, { name: 'props' })
+            ) {
               isPure = false;
             }
           }
         });
 
-        if (!isPure) {
+        if (!isPure || !renderMethod) {
           // fuck this class too.
           return;
         }
@@ -71,7 +86,7 @@ export default function ({Plugin, types: t}) {
 
         // replace with a function
         const className = getClassName(node);
-        const body = renderMethod.value.body;
+        const body = getMethodBody(renderMethod);
 
         return buildPureComponentFunction(
           className,
