@@ -45,13 +45,13 @@ export default function ({Plugin, types: t}) {
   }
 
   function getMethodBody(node) {
-    return node.value.body;
+    return node.body;
   }
 
-  return new Plugin('react-pure-components', {
+  return {
     visitor: {
-      ClassDeclaration(node, path) {
-        if (!isReactClass(node)) {
+      ClassDeclaration(path) {
+        if (!isReactClass(path.node)) {
           // yo, fuck this class then.
           return;
         }
@@ -60,16 +60,16 @@ export default function ({Plugin, types: t}) {
         let isPure = true;
 
         // get the render method and make sure it doesn't have any other methods
-        this.traverse({
-          MethodDefinition(node) {
-            if (getMethodName(node) === 'render') {
-              renderMethod = node;
+        path.traverse({
+          ClassMethod(path) {
+            if (getMethodName(path.node) === 'render') {
+              renderMethod = path.node;
             } else {
               isPure = false;
             }
           },
-          MemberExpression(node) {
-            if (isThisNotProps(node)) {
+          MemberExpression(path) {
+            if (isThisNotProps(path.node)) {
               isPure = false;
             }
           }
@@ -81,23 +81,25 @@ export default function ({Plugin, types: t}) {
         }
 
         // this.props => props
-        this.traverse({
-          MemberExpression(node) {
-            if (isThisProps(node)) {
-              return t.identifier('props');
+        path.traverse({
+          MemberExpression(path) {
+            if (isThisProps(path.node)) {
+              path.replaceWith(t.identifier('props'));
             }
           }
         });
 
         // replace with a function
-        const className = getClassName(node);
+        const className = getClassName(path.node);
         const body = getMethodBody(renderMethod);
 
-        return buildPureComponentFunction(
-          className,
-          body
+        path.replaceWith(
+          buildPureComponentFunction(
+            className,
+            body
+          )
         );
       }
     }
-  });
+  };
 }
