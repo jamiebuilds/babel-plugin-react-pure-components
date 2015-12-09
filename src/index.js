@@ -1,6 +1,4 @@
-/* eslint no-unused-vars:0 */
-export default function ({Plugin, types: t}) {
-
+export default function ({ types: t }) {
   // is `class extends React.Component`?
   function isReactClass(node) {
     const superClass = node.superClass;
@@ -11,42 +9,35 @@ export default function ({Plugin, types: t}) {
     );
   }
 
-  // is `this.*` other than `props`?
-  function isThisNotProps(node) {
-    return (
-      t.isThisExpression(node.object) &&
-      !t.isIdentifier(node.property, { name: 'props' })
-    );
-  }
+  const bodyVisitor = {
+    ClassMethod(path) {
+      if (path.node.key.name === 'render') {
+        this.renderMethod = path.node;
+      } else {
+        this.isPure = false;
+        path.stop();
+      }
+    },
 
-  // is `this.props`?
-  function isThisProps(node) {
-    return (
-      t.isThisExpression(node.object) &&
-      t.isIdentifier(node.property, { name: 'props' })
-    );
-  }
+    MemberExpression(path) {
+      const { node } = path;
 
-  // function <name>(props) <body>
-  function buildPureComponentFunction(name, body) {
-    return t.functionDeclaration(
-      t.identifier(name),
-      [t.identifier('props')],
-      body
-    );
-  }
+      // non-this member expressions dont matter
+      if (!t.isThisExpression(node.object)) {
+        return;
+      }
 
-  function getMethodName(node) {
-    return node.key.name;
-  }
+      // Don't allow this.<anything other than props>
+      if (!t.isIdentifier(node.property, { name: 'props' })) {
+        this.isPure = false;
+        path.stop();
+        return;
+      }
 
-  function getClassName(node) {
-    return node.id.name;
-  }
-
-  function getMethodBody(node) {
-    return node.body;
-  }
+      // this.props.foo => props.foo
+      path.replaceWith(t.identifier('props'));
+    }
+  };
 
   return {
     visitor: {
@@ -56,47 +47,24 @@ export default function ({Plugin, types: t}) {
           return;
         }
 
-        let renderMethod;
-        let isPure = true;
+        const state = {
+          renderMethod: null,
+          isPure: true
+        };
 
         // get the render method and make sure it doesn't have any other methods
-        path.traverse({
-          ClassMethod(path) {
-            if (getMethodName(path.node) === 'render') {
-              renderMethod = path.node;
-            } else {
-              isPure = false;
-            }
-          },
-          MemberExpression(path) {
-            if (isThisNotProps(path.node)) {
-              isPure = false;
-            }
-          }
-        });
+        path.traverse(bodyVisitor, state);
 
-        if (!isPure || !renderMethod) {
+        if (!state.isPure || !state.renderMethod) {
           // fuck this class too.
           return;
         }
 
-        // this.props => props
-        path.traverse({
-          MemberExpression(path) {
-            if (isThisProps(path.node)) {
-              path.replaceWith(t.identifier('props'));
-            }
-          }
-        });
-
-        // replace with a function
-        const className = getClassName(path.node);
-        const body = getMethodBody(renderMethod);
-
         path.replaceWith(
-          buildPureComponentFunction(
-            className,
-            body
+          t.functionDeclaration(
+            t.identifier(path.node.id.name),
+            [t.identifier('props')],
+            state.renderMethod.body
           )
         );
       }
