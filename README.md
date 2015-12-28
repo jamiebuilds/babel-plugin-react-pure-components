@@ -10,6 +10,10 @@ In:
 
 ```js
 class MyComponent extends React.Component {
+  static propTypes = {
+    className: React.PropTypes.string.isRequired
+  };
+
   render() {
     return (
       <div className={this.props.className}>
@@ -30,6 +34,10 @@ function MyComponent(props) {
     </div>
   );
 }
+
+MyComponent.propTypes = {
+  className: React.PropTypes.string.isRequired
+};
 ```
 
 ## Installation

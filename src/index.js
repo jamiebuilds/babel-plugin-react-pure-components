@@ -12,10 +12,23 @@ export default function ({ types: t }) {
   const bodyVisitor = {
     ClassMethod(path) {
       if (path.node.key.name === 'render') {
-        this.renderMethod = path.node;
+        this.renderMethod = path;
       } else {
         this.isPure = false;
         path.stop();
+      }
+    },
+
+    ClassProperty(path) {
+      const name = path.node.key.name;
+
+      if (path.node.static && (
+        name === 'propTypes' ||
+        name === 'defaultProps'
+      )) {
+        this.properties.push(path);
+      } else {
+        this.isPure = false;
       }
     },
 
@@ -49,6 +62,7 @@ export default function ({ types: t }) {
 
         const state = {
           renderMethod: null,
+          properties: [],
           isPure: true
         };
 
@@ -60,13 +74,28 @@ export default function ({ types: t }) {
           return;
         }
 
+        const id = t.identifier(path.node.id.name);
+
         path.replaceWith(
           t.functionDeclaration(
-            t.identifier(path.node.id.name),
+            id,
             [t.identifier('props')],
-            state.renderMethod.body
+            state.renderMethod.node.body
           )
         );
+
+        if (!state.properties.length) {
+          return;
+        }
+
+        state.properties.reverse().forEach(prop => {
+          path.insertAfter(t.expressionStatement(
+            t.assignmentExpression('=',
+              t.MemberExpression(id, prop.node.key),
+              prop.node.value
+            )
+          ));
+        });
       }
     }
   };
