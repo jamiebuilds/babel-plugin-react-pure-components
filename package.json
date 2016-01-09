@@ -16,8 +16,8 @@
     "mocha": "^2.3.4"
   },
   "scripts": {
-    "build": "babel-plugin build",
-    "push": "babel-plugin publish",
+    "build": "babel src --out-dir lib",
+    "prepublish": "npm run build",
     "test": "mocha --compilers js:babel-register"
   },
   "keywords": [
