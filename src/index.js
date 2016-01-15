@@ -9,6 +9,15 @@ export default function ({ types: t }) {
     );
   }
 
+  // @todo look into ExportNamedDeclaration bug
+  function getPath(path) {
+    if (t.isExportNamedDeclaration(path.parent)) {
+      return path.parentPath;
+    } else {
+      return path;
+    }
+  }
+
   const bodyVisitor = {
     ClassMethod(path) {
       if (path.node.key.name === 'render') {
@@ -89,7 +98,7 @@ export default function ({ types: t }) {
         }
 
         state.properties.reverse().forEach(prop => {
-          path.insertAfter(t.expressionStatement(
+          getPath(path).insertAfter(t.expressionStatement(
             t.assignmentExpression('=',
               t.MemberExpression(id, prop.node.key),
               prop.node.value
