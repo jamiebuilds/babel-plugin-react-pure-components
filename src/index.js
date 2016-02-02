@@ -49,6 +49,13 @@ export default function ({ types: t }) {
 
       // this.props.foo => props.foo
       this.thisProps.push(path);
+    },
+
+    JSXIdentifier(path) {
+      if (path.node.name === 'ref') {
+        this.isPure = false;
+        path.stop();
+      }
     }
   };
 
