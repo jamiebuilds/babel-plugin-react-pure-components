@@ -54,7 +54,7 @@ export default function ({ types: t }) {
 
   return {
     visitor: {
-      ClassDeclaration(path) {
+      Class(path) {
         if (!isReactClass(path.node)) {
           // yo, fuck this class then.
           return;
@@ -76,7 +76,9 @@ export default function ({ types: t }) {
 
         const id = t.identifier(path.node.id.name);
 
-        path.replaceWith(
+        let replacement = [];
+
+        replacement.push(
           t.functionDeclaration(
             id,
             [t.identifier('props')],
@@ -84,18 +86,29 @@ export default function ({ types: t }) {
           )
         );
 
-        if (!state.properties.length) {
-          return;
-        }
-
-        state.properties.reverse().forEach(prop => {
-          path.insertAfter(t.expressionStatement(
+        state.properties.forEach(prop => {
+          replacement.push(t.expressionStatement(
             t.assignmentExpression('=',
               t.MemberExpression(id, prop.node.key),
               prop.node.value
             )
           ));
         });
+
+        if (t.isExpression(path.node)) {
+          replacement.push(t.returnStatement(id));
+
+          replacement = t.callExpression(
+            t.functionExpression(null, [],
+              t.blockStatement(replacement)
+            ),
+            []
+          );
+        }
+
+        path.replaceWithMultiple(
+          replacement
+        );
       }
     }
   };
