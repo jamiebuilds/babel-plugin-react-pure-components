@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-react-pure-components",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Optimize React code by making pure classes into functions",
   "repository": "thejameskyle/babel-plugin-react-pure-components",
   "license": "MIT",
