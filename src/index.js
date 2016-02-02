@@ -48,7 +48,7 @@ export default function ({ types: t }) {
       }
 
       // this.props.foo => props.foo
-      path.replaceWith(t.identifier('props'));
+      this.thisProps.push(path);
     }
   };
 
@@ -63,6 +63,7 @@ export default function ({ types: t }) {
         const state = {
           renderMethod: null,
           properties: [],
+          thisProps: [],
           isPure: true
         };
 
@@ -77,6 +78,10 @@ export default function ({ types: t }) {
         const id = t.identifier(path.node.id.name);
 
         let replacement = [];
+
+        state.thisProps.forEach(function(thisProp) {
+          thisProp.replaceWith(t.identifier('props'));
+        });
 
         replacement.push(
           t.functionDeclaration(

@@ -1,5 +1,6 @@
 module.exports = (function () {
   function Foo(props) {
+    props.foo;
     return <div />;
   }
 
