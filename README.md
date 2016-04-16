@@ -1,5 +1,9 @@
 # babel-plugin-react-pure-components
 
+### Moved to: https://github.com/thejameskyle/babel-react-optimize
+
+---
+
 Optimize React code by making pure classes into functions
 
 > Note: Requires React v0.14 or higher.
