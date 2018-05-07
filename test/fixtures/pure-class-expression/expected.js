@@ -1,4 +1,4 @@
-module.exports = (function () {
+module.exports = function () {
   function Foo(props) {
     props.foo;
     return <div />;
@@ -8,4 +8,4 @@ module.exports = (function () {
     foo: React.PropTypes.string.isRequired
   };
   return Foo;
-})();
+}();
